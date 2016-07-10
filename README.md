@@ -1,2 +1,2 @@
 # FtpTransfer
-Constant FTP transfer for mobility testing.
+Continuous FTP transfer for mobility testing.
