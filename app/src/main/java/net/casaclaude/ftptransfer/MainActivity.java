@@ -14,6 +14,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileReader;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.security.Timestamp;
@@ -22,14 +23,20 @@ import java.util.TimerTask;
 
 public class MainActivity extends AppCompatActivity {
 
-    private boolean isFileExists(String filename){
-        File folder1 = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + filename);
-        return folder1.exists();
-    }
-
-    private boolean removeFile(String filename){
-        File folder1 = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + filename);
-        return folder1.delete();
+    private void removeFile(String filename){
+        final String filename1 = filename;
+        final File folder1 = new File(Environment.getExternalStorageDirectory().getAbsolutePath()+ File.separator + Environment.getExternalStorageDirectory().getAbsolutePath());
+        final File[] files = folder1.listFiles(new FilenameFilter() {
+            @Override
+            public boolean accept(final File dir, final String name) {
+                return name.matches(filename1);
+            }
+        } );
+        for (final File file : files ) {
+            if (!file.delete()) {
+                System.err.println("Can't remove " + file.getAbsolutePath());
+            }
+        }
     }
 
     private void writeToFile(String data) {
@@ -80,8 +87,6 @@ public class MainActivity extends AppCompatActivity {
 
         // ftptransfer-url.txt : http://mirror.ovh.net/ftp.ubuntu.com/ls-lR.gz
         String url = readUrl();
-
-        if (isFileExists("download-trash.dat")) { removeFile("download-trash.dat"); }
 
         final TextView tv=(TextView)findViewById(R.id.myText);
         final DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));
@@ -137,6 +142,7 @@ public class MainActivity extends AppCompatActivity {
                     currentStatus = cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_STATUS));
 
                     if (currentStatus != DownloadManager.STATUS_RUNNING && currentStatus != DownloadManager.STATUS_PENDING) {
+                        removeFile("download.*\\.dat");
                         downloadId = downloadManager.enqueue(request);
                         downloadedBytes = 0;
                     }
