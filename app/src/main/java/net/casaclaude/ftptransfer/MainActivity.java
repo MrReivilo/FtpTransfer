@@ -86,7 +86,10 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         // ftptransfer-url.txt : http://mirror.ovh.net/ftp.ubuntu.com/ls-lR.gz
+        // ftptransfer-url.txt : http://trtradio1:trtradio1@172.16.175.17/ftp/100Mb.dat \
         String url = readUrl();
+
+        // url = "http://mirror.ovh.net/ftp.ubuntu.com/ls-lR.gz";
 
         final TextView tv=(TextView)findViewById(R.id.myText);
         final DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));
@@ -101,11 +104,11 @@ public class MainActivity extends AppCompatActivity {
         new Thread(new Runnable() {
             @Override
             public void run() {
-                int currentStatus = DownloadManager.STATUS_RUNNING;
-                long downloadId = downloadManager.enqueue(request);
+                int currentStatus = DownloadManager.STATUS_PAUSED;
                 long downloadedBytes = 0;
                 long totalDownloadedBytes = 0;
                 long startingTime = System.currentTimeMillis();
+                long downloadId = downloadManager.enqueue(request);
                 long downloadSpeed;
                 long timeElapsed;
 
@@ -134,27 +137,44 @@ public class MainActivity extends AppCompatActivity {
                             public void run() {
                                 if (tv != null) {
                                     tv.setText(downloadData);
-                                    writeToFile(downloadData);
                                 }
+                                writeToFile(downloadData);
                             }
                         });
                     }
                     currentStatus = cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_STATUS));
 
-                    if (currentStatus != DownloadManager.STATUS_RUNNING && currentStatus != DownloadManager.STATUS_PENDING) {
+                    if (currentStatus == DownloadManager.STATUS_SUCCESSFUL) {
                         removeFile("download.*\\.dat");
                         downloadId = downloadManager.enqueue(request);
                         downloadedBytes = 0;
+                    }
+                    else if (currentStatus == DownloadManager.STATUS_PAUSED) {
+                        final String downloadData = "{\"status\":\"PAUSED\"}";
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                if (tv != null) {
+                                    tv.setText(downloadData);
+                                }
+                                writeToFile(downloadData);
+                            }
+                        });
                     }
 
                     cursor.close();
                 }
 
-                String downloadData = "{\"status\":\"ERROR\"}";
-                if (tv != null) {
-                    tv.setText(downloadData);
-                }
-
+                final String downloadData = "{\"status\":\"ERROR\"}";
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (tv != null) {
+                            tv.setText(downloadData);
+                        }
+                        writeToFile(downloadData);
+                    }
+                });
             }
         }).start();
     }
